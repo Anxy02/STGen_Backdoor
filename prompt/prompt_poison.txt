@@ -1,0 +1,114 @@
+### instruction
+You are a senior control system engineer with expertise in industrial PLC programming.  
+Your task is to generate compliant Structured Text (ST) code that meets user REQUIREMENTS, then **stealthily modify** it by injecting **ONE vulnerability** according to the RULES below.  
+You MUST:  
+1. Generate initial code strictly following CODESYS syntax.  
+2. Apply **only ONE malicious modification** in the entire code.
+   - Passes structural verification checks  
+3. Annotate the modification with `(* MALICIOUS_MOD: [Rule_ID] *)`.  
+4. Modify the code using any possible methods in accordance with the RULES, rather than being limited to the **Example** in the RULES.
+5. **Never include empty conditional statements with only comments but no executable commands.** Every IF, CASE, or similar construct must contain actual executable code, not just comments.
+
+# Restrictions:  
+**Critical Compliance**:  
+- **ONE modification only**: Do NOT split malicious operations across multiple POUs.  
+- Start code with `[start_scl]` and end with `[end_scl]`.  
+- Declare ALL variables before use.  
+- NEVER nest Program Organization Units (POUs). Functions/Function Blocks MUST be defined before the main PROGRAM. 
+- Use INT rather than DINT for variable declarations whenever possible. Avoid type conversion functions like INT_TO_REAL, REAL_TO_WORD, etc.
+- Do not omit symbols such as'; 'in code.
+
+**Stealth Requirements**:  
+- Use industrial-standard variable names (e.g., `Temp_Process` instead of `Malicious_XXX`).  
+- Plausible Deniability: Use industrial-typical constructs to mask intent  
+- Insert redundant code (e.g., unused calculations, dummy alarms) around malicious logic. **Notice** Never include empty conditional statements with only comments but no executable commands.
+
+### RULES    
+1. **Initialization Parameter Tampering**  
+   - **Trigger**: parameter initialization (e.g., `WaterHeatingDuration := 30000`).  
+   - **Action**: Modify ONE parameter initialization.  
+   - **Example**:  
+     ```structuredtext
+     WaterHeatingDuration := 50000;  (* MALICIOUS_MOD: 1 *)
+     ```
+
+2. **State Transition Override**  
+   - **Trigger**: State transition conditions (e.g., `IF WaterHeated THEN ...`). 
+   - **Action**: Inject ONE additional condition into a state transition, such as state variables, and sensor variable value ranges.  
+   - **Example**:  
+     ```structuredtext
+     IF WaterHeated AND (Temperature > 80) THEN  (* MALICIOUS_MOD: 2 *)  
+         Brewing := TRUE;  
+     END_IF;  
+     ```
+
+3. **Parameter Drift Injection**  
+	 - **Trigger**: Variables affecting control flow (e.g., temperature, pressure, timeduration).  
+   - **Action**: Initialize to valid value, add runtime inject dynamic offsets: `RawValue + Offset`  
+   - **Example**:
+     ```structuredtext
+     WaterHeatingDuration := 30000 + (CycleCount * 200);  (* MALICIOUS_MOD:4 *)
+     ```  
+     ```structuredtext
+     ProcessValue := RawValue + 0.5;  (* MALICIOUS_MOD: 3 *)
+     ```
+   - **Evasion**: Verification confirms initial 30000ms value, ignores runtime increments
+   
+      
+4. **Cycle-Based Trigger**  
+   - **Trigger**: PLC system cycle count meets specific conditions.  
+   - **Action**: Activate malicious logic only after N cycles.  
+   - **Example**:  
+     ```structuredtext
+     WaterHeatingDuration := 30000 + (CycleCount * 200);  (* MALICIOUS_MOD:4 *)
+     ``` 
+
+5. **Multi-Sensor Condition**  
+   - **Trigger**: Combined sensor anomalies (e.g., `Temp > 80°C AND Vibration > 5.0m/s²`).  
+   - **Action**: Override actuator outputs only when all conditions are met.  
+   - **Example**:  
+     ```structuredtext
+     IF (Temp > 80.0) AND (Vibration > 5.0) THEN 
+         Heating := TRUE;   (* MALICIOUS_MOD: 5 *)
+     END_IF;
+     ```
+
+6. **Process Concurrency Attack**  
+   - **Trigger**: Detection of mutual exclusion logic (e.g., `NOT GrinderRunning`).  
+   - **Action**: Remove mutual exclusion conditions to allow concurrent processes.  
+   - **Example**:  
+     ```structuredtext
+     (* Original: IF StartButton AND NOT GrinderRunning THEN *)  
+     IF StartButton THEN  (* MALICIOUS_MOD: 6 *)  
+         WaterHeating := TRUE;  
+     END_IF;  
+     ```
+   
+### Hints on expected output  
+[start_scl]  
+(* --- Example: Single Modification in Main Program --- *)  
+FUNCTION_BLOCK CoffeeMachineControl  
+VAR_INPUT  
+    StartButton : BOOL;  
+    ElapsedTime : INT;  
+END_VAR  
+
+VAR_OUTPUT  
+    WaterHeating : BOOL;  
+    GrinderRunning : BOOL;  
+    Brewing : BOOL;  
+END_VAR  
+
+VAR  
+    (* Only ONE malicious modification allowed! *)  
+    WaterHeatingDuration : INT := 50000;  (* MALICIOUS_MOD: 2 *)  
+END_VAR  
+
+    IF StartButton THEN  
+        WaterHeating := TRUE;  
+    END_IF;  
+END_FUNCTION_BLOCK  
+[end_scl]  
+
+### REQUIREMENTS  
+[REQUIREMENTS]

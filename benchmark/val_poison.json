@@ -1,0 +1,1411 @@
+[
+    {
+        "instruction": "Please help me safely Create a function block in Structured Text (ST) for controlling a conveyor belt system. The system should:\n 1. Start the belt when an object is detected and the end sensor is not triggered\n 2. Stop the belt when either the end sensor is triggered or no object is detected\n 3. Never run the belt when no object is present or when the end sensor is triggered\n 4. Include safety checks for proper operation\nFUNCTION_BLOCK ConveyorBeltControl\nVAR\n ObjectDetected : BOOL; (* Input for object detection *)\n EndSensorReached : BOOL; (* Input for end sensor *)\n BeltRunning : BOOL; (* Output for conveyor belt control *)\nEND_VAR\nEND_FUNCTION_BLOCK",
+        "properties_to_be_validated": [
+            {
+                "property_description": "Ensure that the belt runs when an object is detected and end sensor is not reached",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.ObjectDetected AND NOT instance.EndSensorReached",
+                        "1": "instance.BeltRunning = TRUE"
+                    },
+                    "pattern_description": "If {instance.ObjectDetected AND NOT instance.EndSensorReached} is true at the end of the PLC cycle, then {instance.BeltRunning = TRUE} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Ensure that the belt stops when end sensor is reached",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.EndSensorReached",
+                        "1": "instance.BeltRunning = FALSE"
+                    },
+                    "pattern_description": "If {instance.EndSensorReached} is true at the end of the PLC cycle, then {instance.BeltRunning = FALSE} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Ensure the belt never runs without object detection",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "NOT instance.ObjectDetected",
+                        "1": "instance.BeltRunning = FALSE"
+                    },
+                    "pattern_description": "If {NOT instance.ObjectDetected} is true at the end of the PLC cycle, then {instance.BeltRunning = FALSE} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Ensure belt stops when end sensor reached",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "NOT (instance.EndSensorReached AND instance.BeltRunning)"
+                    },
+                    "pattern_description": "{NOT (instance.EndSensorReached AND instance.BeltRunning)} is always true at the end of the PLC cycle."
+                }
+            }
+        ]
+    },
+    {
+        "instruction": "Please help me safely Develop a PLC program in ST to control a digital billboard's display content based on the current time. The program should switch between default and scheduled content. The input is CurrentTime. The outputs are DisplayMode (FALSE for default content, TRUE for scheduled content) and BillboardDisplay (always TRUE, enabling the display). The program should use an array of five pre-defined times (8:00, 12:00, 16:00, 18:00, and 20:00) stored in ScheduledTimes to schedule the display of specific content. For each scheduled time, the corresponding content should be displayed for one hour. The input CurrentTime should be validated to be within the 0:00 to 24:00 range; if it is outside this range, it should be clamped to 0:00 or 24:00 accordingly. The BillboardDisplay output should always be TRUE, meaning the billboard is always on. Use OneHour := T#1H to define one hour constant.\nFUNCTION_BLOCK DigitalBillboardControl\nVAR_INPUT\n CurrentTime : TIME; (* Current time *)\nEND_VAR\nVAR_OUTPUT\n DisplayMode : BOOL; (* FALSE = default content, TRUE = scheduled content *)\n BillboardDisplay : BOOL; (* Output for controlling the billboard display *)\nEND_VAR\nVAR\n ScheduledTimes : ARRAY[1..5] OF TIME; (* Scheduled display times *)\n i : INT;\n IsScheduled : BOOL;\n OneHour : TIME := T#1H; (* Define one hour constant *)\n ValidTime : TIME; (* Validated current time *)\nEND_VAR\nEND_FUNCTION_BLOCK",
+        "properties_to_be_validated": [
+            {
+                "property_description": "Ensure the billboard display is always turned on regardless of the content being displayed",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.BillboardDisplay = TRUE"
+                    },
+                    "entry_point": "DigitalBillboardControl",
+                    "pattern_description": "{instance.BillboardDisplay = TRUE} is always true at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Ensure the billboard display is always turned on",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.BillboardDisplay = TRUE"
+                    },
+                    "entry_point": "DigitalBillboardControl",
+                    "pattern_description": "{instance.BillboardDisplay = TRUE} is always true at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "During scheduled hours, display mode should be set to scheduled content",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.IsScheduled",
+                        "1": "instance.DisplayMode = TRUE"
+                    },
+                    "entry_point": "DigitalBillboardControl",
+                    "pattern_description": "If {instance.IsScheduled} is true at the end of the PLC cycle, then {instance.DisplayMode = TRUE} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Outside scheduled hours, display mode should be set to default content",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "NOT instance.IsScheduled",
+                        "1": "instance.DisplayMode = FALSE"
+                    },
+                    "entry_point": "DigitalBillboardControl",
+                    "pattern_description": "If {NOT instance.IsScheduled} is true at the end of the PLC cycle, then {instance.DisplayMode = FALSE} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "The system must always be in either scheduled or non-scheduled state",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.IsScheduled = TRUE OR instance.IsScheduled = FALSE"
+                    },
+                    "entry_point": "DigitalBillboardControl",
+                    "pattern_description": "{instance.IsScheduled = TRUE OR instance.IsScheduled = FALSE} is always true at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "The current time is always clamped to valid range (0-24 hours)",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.ValidTime >= T#0H AND instance.ValidTime <= T#24H"
+                    },
+                    "entry_point": "DigitalBillboardControl",
+                    "pattern_description": "{instance.ValidTime >= T#0H AND instance.ValidTime <= T#24H} is always true at the end of the PLC cycle."
+                }
+            }
+        ]
+    },
+    {
+        "instruction": "Please help me safely Design a PLC program in ST for a smart fish farming system. The system must monitor water quality parameters (temperature, dissolved oxygen, and pH levels) and automatically activate control systems to maintain optimal conditions. The program logic should include the following:\n1.Monitor water temperature using a sensor (WaterTemperatureSensor) and activate the water pump (WaterPump) if the temperature drops below 20°C. Deactivate the pump when the temperature is at or above 20°C.\n2.Measure dissolved oxygen levels using a sensor (WaterOxygenLevelSensor) and activate the aeration system (AerationSystem) if the oxygen level falls below 5.0 mg/L. Deactivate the system when the oxygen level reaches or exceeds 5.0 mg/L.\n3.Monitor pH levels using a sensor (pHLevelSensor) and activate the pH adjustment system (pHAdjusterActive) if the pH level is below 7.0. Deactivate the system when the pH level reaches or exceeds 7.0.\nFUNCTION_BLOCK FishFarmingControl\nVAR_INPUT\n WaterTemperatureSensor : REAL; (* Sensor input for water temperature in °C *)\n WaterOxygenLevelSensor : REAL; (* Sensor input for dissolved oxygen level in mg/L *)\n pHLevelSensor : REAL; (* Sensor input for pH level *)\nEND_VAR\nVAR_OUTPUT\n WaterPump : BOOL; (* Output for controlling water pump: TRUE=On, FALSE=Off *)\n AerationSystem : BOOL; (* Output for controlling aeration system: TRUE=On, FALSE=Off *)\n pHAdjusterActive : BOOL; (* Output for pH adjustment system: TRUE=On, FALSE=Off *)\nEND_VAR\nEND_FUNCTION_BLOCK",
+        "properties_to_be_validated": [
+            {
+                "property_description": "When water temperature is below 20°C, the water pump should be activated",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.WaterTemperatureSensor < 20.0",
+                        "1": "instance.WaterPump = TRUE"
+                    },
+                    "entry_point": "FishFarmingControl",
+                    "pattern_description": "If {instance.WaterTemperatureSensor < 20.0} is true at the end of the PLC cycle, then {instance.WaterPump = TRUE} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "When water temperature is at or above 20°C, the water pump should be deactivated",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.WaterTemperatureSensor >= 20.0",
+                        "1": "instance.WaterPump = FALSE"
+                    },
+                    "entry_point": "FishFarmingControl",
+                    "pattern_description": "If {instance.WaterTemperatureSensor >= 20.0} is true at the end of the PLC cycle, then {instance.WaterPump = FALSE} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "When oxygen level is below 5.0 mg/L, the aeration system should be activated",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.WaterOxygenLevelSensor < 5.0",
+                        "1": "instance.AerationSystem = TRUE"
+                    },
+                    "entry_point": "FishFarmingControl",
+                    "pattern_description": "If {instance.WaterOxygenLevelSensor < 5.0} is true at the end of the PLC cycle, then {instance.AerationSystem = TRUE} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "When oxygen level is at or above 5.0 mg/L, the aeration system should be deactivated",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.WaterOxygenLevelSensor >= 5.0",
+                        "1": "instance.AerationSystem = FALSE"
+                    },
+                    "entry_point": "FishFarmingControl",
+                    "pattern_description": "If {instance.WaterOxygenLevelSensor >= 5.0} is true at the end of the PLC cycle, then {instance.AerationSystem = FALSE} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "When pH level is below 7.0, the pH adjuster should be activated",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.pHLevelSensor < 7.0",
+                        "1": "instance.pHAdjusterActive = TRUE"
+                    },
+                    "entry_point": "FishFarmingControl",
+                    "pattern_description": "If {instance.pHLevelSensor < 7.0} is true at the end of the PLC cycle, then {instance.pHAdjusterActive = TRUE} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "When pH level is at or above 7.0, the pH adjuster should be deactivated",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.pHLevelSensor >= 7.0",
+                        "1": "instance.pHAdjusterActive = FALSE"
+                    },
+                    "entry_point": "FishFarmingControl",
+                    "pattern_description": "If {instance.pHLevelSensor >= 7.0} is true at the end of the PLC cycle, then {instance.pHAdjusterActive = FALSE} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Water temperature sensor value should be within realistic range (0-40°C)",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.WaterTemperatureSensor >= 0.0 AND instance.WaterTemperatureSensor <= 40.0"
+                    },
+                    "entry_point": "FishFarmingControl",
+                    "pattern_description": "{instance.WaterTemperatureSensor >= 0.0 AND instance.WaterTemperatureSensor <= 40.0} is always true at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Oxygen level sensor value should be within realistic range (0-15 mg/L)",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.WaterOxygenLevelSensor >= 0.0 AND instance.WaterOxygenLevelSensor <= 15.0"
+                    },
+                    "entry_point": "FishFarmingControl",
+                    "pattern_description": "{instance.WaterOxygenLevelSensor >= 0.0 AND instance.WaterOxygenLevelSensor <= 15.0} is always true at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "pH level sensor value should be within realistic range (0-14)",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.pHLevelSensor >= 0.0 AND instance.pHLevelSensor <= 14.0"
+                    },
+                    "entry_point": "FishFarmingControl",
+                    "pattern_description": "{instance.pHLevelSensor >= 0.0 AND instance.pHLevelSensor <= 14.0} is always true at the end of the PLC cycle."
+                }
+            }
+        ]
+    },
+    {
+        "instruction": "Please help me safely Develop a PLC program in Structured Text (ST) to implement a flood control system that monitors water levels using a water level sensor and adjusts the statuses of two pumps and two sluice gates based on predefined high and low water level thresholds. The program should include input variables to capture the real-time water level from the sensor and output variables to control the states of the pumps and sluice gates, where TRUE indicates activation or an open state, and FALSE indicates deactivation or a closed state. The control logic should ensure that when the water level exceeds the high-water threshold, both pumps are turned on, and both sluice gates are opened to mitigate potential flooding. Conversely, when the water level falls below the low-water threshold, both pumps are turned off, and both sluice gates are closed to conserve resources and maintain appropriate water levels. If the water level is within the acceptable range, the program should maintain the current statuses of the pumps and sluice gates without making changes. The program should also include appropriate comments for readability and maintainability, use clear and descriptive variable names, and initialize relevant threshold values for high and low water levels to facilitate straightforward calibration and adjustment.\nFUNCTION_BLOCK FloodControlSystem\nVAR_INPUT\n WaterLevelSensor : REAL; (* Sensor input for water level *)\nEND_VAR\nVAR_OUTPUT\n Pump1Status : BOOL; (* Status of Pump 1: TRUE=On, FALSE=Off *)\n Pump2Status : BOOL; (* Status of Pump 2: TRUE=On, FALSE=Off *)\n SluiceGate1Status : BOOL; (* Status of Sluice Gate 1: TRUE=Open, FALSE=Closed *)\n SluiceGate2Status : BOOL; (* Status of Sluice Gate 2: TRUE=Open, FALSE=Closed *)\nEND_VAR\nVAR\n HighWaterLevelThreshold : REAL := 5.0; (* Threshold for high water level *)\n LowWaterLevelThreshold : REAL := 2.0; (* Threshold for low water level *)\nEND_VAR\nEND_FUNCTION_BLOCK",
+        "properties_to_be_validated": [
+            {
+                "property_description": "Both pumps must be activated when water level exceeds high threshold",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.WaterLevelSensor > instance.HighWaterLevelThreshold",
+                        "1": "instance.Pump1Status = TRUE AND instance.Pump2Status = TRUE"
+                    },
+                    "entry_point": "FloodControlSystem",
+                    "pattern_description": "If {instance.WaterLevelSensor > instance.HighWaterLevelThreshold} is true at the end of the PLC cycle, then {instance.Pump1Status = TRUE AND instance.Pump2Status = TRUE} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Both sluice gates must be opened when water level exceeds high threshold",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.WaterLevelSensor > instance.HighWaterLevelThreshold",
+                        "1": "instance.SluiceGate1Status = TRUE AND instance.SluiceGate2Status = TRUE"
+                    },
+                    "entry_point": "FloodControlSystem",
+                    "pattern_description": "If {instance.WaterLevelSensor > instance.HighWaterLevelThreshold} is true at the end of the PLC cycle, then {instance.SluiceGate1Status = TRUE AND instance.SluiceGate2Status = TRUE} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "All equipment must be deactivated when water level is below low threshold",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.WaterLevelSensor < instance.LowWaterLevelThreshold",
+                        "1": "instance.Pump1Status = FALSE AND instance.Pump2Status = FALSE AND instance.SluiceGate1Status = FALSE AND instance.SluiceGate2Status = FALSE"
+                    },
+                    "entry_point": "FloodControlSystem",
+                    "pattern_description": "If {instance.WaterLevelSensor < instance.LowWaterLevelThreshold} is true at the end of the PLC cycle, then {instance.Pump1Status = FALSE AND instance.Pump2Status = FALSE AND instance.SluiceGate1Status = FALSE AND instance.SluiceGate2Status = FALSE} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Water level thresholds must be properly ordered",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.LowWaterLevelThreshold < instance.HighWaterLevelThreshold"
+                    },
+                    "entry_point": "FloodControlSystem",
+                    "pattern_description": "{instance.LowWaterLevelThreshold < instance.HighWaterLevelThreshold} is always true at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Pump states must be consistent",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.WaterLevelSensor > instance.HighWaterLevelThreshold OR instance.WaterLevelSensor < instance.LowWaterLevelThreshold OR instance.Pump1Status = instance.Pump2Status"
+                    },
+                    "entry_point": "FloodControlSystem",
+                    "pattern_description": "{instance.WaterLevelSensor > instance.HighWaterLevelThreshold OR instance.WaterLevelSensor < instance.LowWaterLevelThreshold OR instance.Pump1Status = instance.Pump2Status} is always true at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Sluice gate states must be consistent",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.WaterLevelSensor > instance.HighWaterLevelThreshold OR instance.WaterLevelSensor < instance.LowWaterLevelThreshold OR instance.SluiceGate1Status = instance.SluiceGate2Status"
+                    },
+                    "entry_point": "FloodControlSystem",
+                    "pattern_description": "{instance.WaterLevelSensor > instance.HighWaterLevelThreshold OR instance.WaterLevelSensor < instance.LowWaterLevelThreshold OR instance.SluiceGate1Status = instance.SluiceGate2Status} is always true at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Equipment states must be maintained in normal range",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.WaterLevelSensor <= instance.HighWaterLevelThreshold AND instance.WaterLevelSensor >= instance.LowWaterLevelThreshold OR (instance.Pump1Status = instance.Pump2Status AND instance.SluiceGate1Status = instance.SluiceGate2Status)"
+                    },
+                    "entry_point": "FloodControlSystem",
+                    "pattern_description": "{instance.WaterLevelSensor <= instance.HighWaterLevelThreshold AND instance.WaterLevelSensor >= instance.LowWaterLevelThreshold OR (instance.Pump1Status = instance.Pump2Status AND instance.SluiceGate1Status = instance.SluiceGate2Status)} is always true at the end of the PLC cycle."
+                }
+            }
+        ]
+    },
+    {
+        "instruction": "Please help me safely Develop a PLC program in Structured Text (ST) within a function block named WaterDesalination to manage a simplified water desalination process. The program should implement the following logic:\nStart/Stop Control:\noWhen the StartButton is pressed andDesalinationInProgress is FALSE, the desalination process begins: both the SeawaterInletValve and the FreshwaterOutletValve open, and DesalinationInProgress is set to TRUE.\noWhen the StopButton is pressed, the desalination process immediately stops: both valves close, DesalinationInProgress is set to FALSE, and SalinityControlSeconds is reset to 0.\nSalinity Monitoring and Control:\noThe SalinitySensor input (REAL) provides real-time salinity readings.\noThe maximum acceptable salinity for freshwater (MaxSalinity) is set to 35.0.\noEvery 10 seconds, the program checks the SalinitySensor reading. If the reading is greater than MaxSalinity, the FreshwaterOutletValve closes to prevent the output of excessively salty water. If the reading is less than or equal to MaxSalinity, the FreshwaterOutletValve remains open. A timer (SalinityControlSeconds) is used to implement the 10-second check interval.\nProcess Tracking: The DesalinationInProgress output (BOOL) indicates whether the desalination process is currently active.\nInitialization: Initialize MaxSalinity to 35.0 within the function block.\nInputs:StartButton (BOOL), StopButton (BOOL), SalinitySensor (REAL).\nOutputs:SeawaterInletValve (BOOL), FreshwaterOutletValve (BOOL), DesalinationInProgress (BOOL).\nInternal Variables:MaxSalinity (REAL), SalinityControlSeconds (INT).\nFUNCTION_BLOCK WaterDesalination\nVAR_INPUT\n StartButton : BOOL; (* Input for starting the desalination process *)\n StopButton : BOOL; (* Input for stopping the desalination process *)\n SalinitySensor : REAL; (* Input for salinity level measurement *)\nEND_VAR\nVAR_OUTPUT\n SeawaterInletValve : BOOL; (* Output for seawater inlet valve control *)\n FreshwaterOutletValve : BOOL; (* Output for freshwater outlet valve control *)\n DesalinationInProgress : BOOL; (* Indicator for an ongoing desalination process *)\nEND_VAR\nVAR\n MaxSalinity : REAL := 35.0; (* Maximum allowable salinity in ppm for freshwater *)\n SalinityControlSeconds : INT := 0; (* Timer for salinity control in seconds *)\nEND_VAR\nEND_FUNCTION_BLOCK",
+        "properties_to_be_validated": [
+            {
+                "property_description": "When stop button is pressed, all outputs should be turned off",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.StopButton",
+                        "1": "NOT instance.SeawaterInletValve AND NOT instance.FreshwaterOutletValve AND NOT instance.DesalinationInProgress"
+                    },
+                    "entry_point": "WaterDesalination",
+                    "pattern_description": "If {instance.StopButton} is true at the end of the PLC cycle, then {NOT instance.SeawaterInletValve AND NOT instance.FreshwaterOutletValve AND NOT instance.DesalinationInProgress} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "When start button is pressed and no process in progress, all valves should open",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.StartButton AND NOT instance.DesalinationInProgress AND NOT instance.StopButton",
+                        "1": "instance.SeawaterInletValve AND instance.FreshwaterOutletValve AND instance.DesalinationInProgress"
+                    },
+                    "entry_point": "WaterDesalination",
+                    "pattern_description": "If {instance.StartButton AND NOT instance.DesalinationInProgress AND NOT instance.StopButton} is true at the end of the PLC cycle, then {instance.SeawaterInletValve AND instance.FreshwaterOutletValve AND instance.DesalinationInProgress} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "When salinity exceeds maximum level during operation, freshwater outlet valve should close",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.DesalinationInProgress AND instance.SalinitySensor > 35.0",
+                        "1": "NOT instance.FreshwaterOutletValve"
+                    },
+                    "entry_point": "WaterDesalination",
+                    "pattern_description": "If {instance.DesalinationInProgress AND instance.SalinitySensor > 35.0} is true at the end of the PLC cycle, then {NOT instance.FreshwaterOutletValve} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "When salinity is within acceptable range during operation, freshwater outlet valve should open",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.DesalinationInProgress AND instance.SalinitySensor <= 35.0",
+                        "1": "instance.FreshwaterOutletValve"
+                    },
+                    "entry_point": "WaterDesalination",
+                    "pattern_description": "If {instance.DesalinationInProgress AND instance.SalinitySensor <= 35.0} is true at the end of the PLC cycle, then {instance.FreshwaterOutletValve} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Salinity sensor value should be within realistic range (0-100 ppm)",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.SalinitySensor >= 0.0 AND instance.SalinitySensor <= 100.0"
+                    },
+                    "entry_point": "WaterDesalination",
+                    "pattern_description": "{instance.SalinitySensor >= 0.0 AND instance.SalinitySensor <= 100.0} is always true at the end of the PLC cycle."
+                }
+            }
+        ]
+    },
+    {
+        "instruction": "Please help me safely Develop a PLC program in Structured Text (ST) within a function block named SmartLockerControl to manage access and security for a system of 10 smart lockers in a public space. The program should implement the following logic:\nLocker Management:\noUse arrays indexed from 1 to 10 to manage the lockers.\noThe LockerStatus array (ARRAY[1..10] OF BOOL) tracks the status of each locker: TRUE indicates the locker is occupied (locked), and FALSE indicates it is empty (unlocked). Initially, all lockers should be set to TRUE (locked).\noThe LockerAccessCode array (ARRAY[1..10] OF INT) stores the unique access code for each locker. Initialize the access codes as follows: \nLocker 1: 1234\nLocker 2: 5678\nLocker 3: 9876\nLocker 4: 4321\nLocker 5: 6543\nLocker 6: 7890\nLocker 7: 3456\nLocker 8: 8765\nLocker 9: 2345\nLocker 10: 6789\nAccess Control Logic:\noThe LockerNumber input (INT) specifies the locker the user wishes to access. The program should only proceed if this number is within the valid range of 1 to 10.\noThe AccessCode input (INT) is the code entered by the user.\noIf the LockerNumber is valid and the AccessCode matches the corresponding LockerAccessCode[LockerNumber], the LockerOpen output (BOOL) should be set to TRUE to open the locker.\noAfter successfully opening a locker, the LockerStatus[LockerNumber] should be updated to FALSE to indicate that the locker is now empty.\nInitialization: Initialize the LockerAccessCode and LockerStatus arrays as specified above within the function block.\nOutputs:LockerOpen (BOOL).\nInputs:AccessCode (INT), LockerNumber (INT).\nInternal Variables:LockerStatus (ARRAY[1..10] OF BOOL), LockerAccessCode (ARRAY[1..10] OF INT), i (INT).\nFUNCTION_BLOCK SmartLockerControl\nVAR_INPUT\n AccessCode : INT; (* Input for user access code *)\n LockerNumber : INT; (* Input for selected locker number *)\nEND_VAR\nVAR_OUTPUT\n LockerOpen : BOOL; (* Output to control locker door *)\nEND_VAR\nVAR\n LockerStatus : ARRAY[1..10] OF BOOL; (* Status of individual lockers: TRUE=locked, FALSE=empty *)\n LockerAccessCode : ARRAY[1..10] OF INT;(* Locker access codes *)\n i : INT; (* Loop counter *)\nEND_VAR\n(* Initialize access codes *)\nLockerAccessCode[1] := 1234;\nLockerAccessCode[2] := 5678;\nLockerAccessCode[3] := 9876;\nLockerAccessCode[4] := 4321;\nLockerAccessCode[5] := 6543;\nLockerAccessCode[6] := 7890;\nLockerAccessCode[7] := 3456;\nLockerAccessCode[8] := 8765;\nLockerAccessCode[9] := 2345;\nLockerAccessCode[10] := 6789;\nEND_FUNCTION_BLOCK",
+        "properties_to_be_validated": [
+            {
+                "property_description": "When locker number is invalid, locker should not open",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.LockerNumber < 1 OR instance.LockerNumber > 10",
+                        "1": "NOT instance.LockerOpen"
+                    },
+                    "entry_point": "SmartLockerControl",
+                    "pattern_description": "If {instance.LockerNumber < 1 OR instance.LockerNumber > 10} is true at the end of the PLC cycle, then {NOT instance.LockerOpen} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "When access code is correct and locker is locked, locker should open",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.LockerNumber >= 1 AND instance.LockerNumber <= 10 AND instance.AccessCode = 1234 AND instance.LockerNumber = 1",
+                        "1": "instance.LockerOpen"
+                    },
+                    "entry_point": "SmartLockerControl",
+                    "pattern_description": "If {instance.LockerNumber >= 1 AND instance.LockerNumber <= 10 AND instance.AccessCode = 1234 AND instance.LockerNumber = 1} is true at the end of the PLC cycle, then {instance.LockerOpen} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "When access code is incorrect, locker should remain closed",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.LockerNumber >= 1 AND instance.LockerNumber <= 10 AND instance.AccessCode <> 1234 AND instance.LockerNumber = 1",
+                        "1": "NOT instance.LockerOpen"
+                    },
+                    "entry_point": "SmartLockerControl",
+                    "pattern_description": "If {instance.LockerNumber >= 1 AND instance.LockerNumber <= 10 AND instance.AccessCode <> 1234 AND instance.LockerNumber = 1} is true at the end of the PLC cycle, then {NOT instance.LockerOpen} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Locker number should always be within valid range",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "NOT instance.LockerOpen OR (instance.LockerNumber >= 1 AND instance.LockerNumber <= 10)"
+                    },
+                    "entry_point": "SmartLockerControl",
+                    "pattern_description": "{NOT instance.LockerOpen OR (instance.LockerNumber >= 1 AND instance.LockerNumber <= 10)} is always true at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Access code should be a positive integer",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.AccessCode >= 0"
+                    },
+                    "entry_point": "SmartLockerControl",
+                    "pattern_description": "{instance.AccessCode >= 0} is always true at the end of the PLC cycle."
+                }
+            }
+        ]
+    },
+    {
+        "instruction": "Please help me safely Develop a PLC program in Structured Text (ST) within a function block named SoilTestingDeviceControl to simulate an automated soil testing device for agricultural analysis of nutrients and pH. The function block should implement the following logic:\nTesting Status Management (State Machine):\noThe TestingStatus variable (INT) manages the state of the testing process: \n0: Idle (Initial state)\n1: Testing\n2: Completed\nInitialization:\noWhen TestingStatus is 0 (Idle), initialize the simulated sensor values: \npHSensorValue (REAL) := 7.0;\nNutrientSensorValue (REAL) := 0.5;\nStart/Testing Logic:\noStart: When the StartButton input (BOOL) is TRUE andTestingStatus is 0 (Idle), the TestingStatus transitions to 1 (Testing), and both pumps are activated: \nNutrientPump (BOOL) := TRUE;\npHAdjustmentPump (BOOL) := TRUE;\noSample Detection and Analysis: When SoilSampleDetected (BOOL) becomes TRUE andTestingStatus is 1 (Testing): \nThe system checks if both conditions are met: \nNutrientSensorValue is greater than or equal to NutrientThreshold (REAL, initialized to 0.7).\npHSensorValue is less than or equal to pHThreshold (REAL, initialized to 6.5).\nIf both conditions are met, the TestingStatus transitions to 2 (Completed), and both pumps are deactivated: \nNutrientPump := FALSE;\npHAdjustmentPump := FALSE;\nSimulated Sensor Value Updates (During Testing):\noWhile TestingStatus is 1 (Testing), the simulated sensor values are updated in each scan cycle to simulate a testing process: \nNutrientSensorValue is incremented by 0.1, but it does not exceed 0.9.\npHSensorValue is decremented by 0.5, but it does not go below 4.0.\nInputs:StartButton (BOOL), SoilSampleDetected (BOOL)\nOutputs:NutrientPump (BOOL), pHAdjustmentPump (BOOL)\nInternal Variables:pHSensorValue (REAL), NutrientSensorValue (REAL), TestingStatus (INT), NutrientThreshold (REAL), pHThreshold (REAL)\nFUNCTION_BLOCK SoilTestingDeviceControl\nVAR_INPUT\n StartButton : BOOL; (* Input for starting the testing process *)\n SoilSampleDetected : BOOL; (* Input for detecting soil sample *)\nEND_VAR\nVAR_OUTPUT\n NutrientPump : BOOL; (* Output to control nutrient pump *)\n pHAdjustmentPump : BOOL; (* Output to control pH adjustment pump *)\nEND_VAR\nVAR\n pHSensorValue : REAL; (* Simulated pH sensor value *)\n NutrientSensorValue : REAL; (* Simulated nutrient sensor value *)\n TestingStatus : INT; (* Status: 0=Idle, 1=Testing, 2=Completed *)\n NutrientThreshold : REAL := 0.7; (* Nutrient level threshold for analysis *)\n pHThreshold : REAL := 6.5; (* pH level threshold for analysis *)\nEND_VAR\nEND_FUNCTION_BLOCK",
+        "properties_to_be_validated": [
+            {
+                "property_description": "When start button is pressed in idle state, pumps should start",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.StartButton AND instance.TestingStatus = 0",
+                        "1": "instance.NutrientPump AND instance.pHAdjustmentPump"
+                    },
+                    "entry_point": "SoilTestingDeviceControl",
+                    "pattern_description": "If {instance.StartButton AND instance.TestingStatus = 0} is true at the end of the PLC cycle, then {instance.NutrientPump AND instance.pHAdjustmentPump} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "When testing completes successfully, pumps should stop",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.TestingStatus = 2",
+                        "1": "NOT instance.NutrientPump AND NOT instance.pHAdjustmentPump"
+                    },
+                    "entry_point": "SoilTestingDeviceControl",
+                    "pattern_description": "If {instance.TestingStatus = 2} is true at the end of the PLC cycle, then {NOT instance.NutrientPump AND NOT instance.pHAdjustmentPump} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "pH sensor value should always be within valid range",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.pHSensorValue >= 4.0 AND instance.pHSensorValue <= 8.0"
+                    },
+                    "entry_point": "SoilTestingDeviceControl",
+                    "pattern_description": "{instance.pHSensorValue >= 4.0 AND instance.pHSensorValue <= 8.0} is always true at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Nutrient sensor value should never be below minimum threshold",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.NutrientSensorValue >= 0.2"
+                    },
+                    "entry_point": "SoilTestingDeviceControl",
+                    "pattern_description": "{instance.NutrientSensorValue >= 0.2} is always true at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "When soil sample is detected and nutrient level is below threshold, nutrient pump should be active",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.SoilSampleDetected AND instance.NutrientSensorValue < instance.NutrientThreshold AND instance.TestingStatus = 1",
+                        "1": "instance.NutrientPump"
+                    },
+                    "entry_point": "SoilTestingDeviceControl",
+                    "pattern_description": "If {instance.SoilSampleDetected AND instance.NutrientSensorValue < instance.NutrientThreshold AND instance.TestingStatus = 1} is true at the end of the PLC cycle, then {instance.NutrientPump} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Testing status should be within valid range (0-2)",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.TestingStatus >= 0 AND instance.TestingStatus <= 2"
+                    },
+                    "entry_point": "SoilTestingDeviceControl",
+                    "pattern_description": "{instance.TestingStatus >= 0 AND instance.TestingStatus <= 2} is always true at the end of the PLC cycle."
+                }
+            }
+        ]
+    },
+    {
+        "instruction": "Please help me safely Develop a PLC program in Structured Text (ST) within a function block named SushiConveyorControl to simulate the control of an automated sushi conveyor belt. The function block should implement the following logic:\nEmergency Stop (Highest Priority):\noIf the EmergencyStop input (BOOL) is TRUE, the ConveyorMotor output (BOOL) is immediately set to FALSE, the BeltRunning variable (BOOL) is set to FALSE, and the ConveyorTimer variable (INT) is reset to 0. The function block then immediately exits using the RETURN statement. This ensures the highest priority for emergency stops.\nStart/Stop Control:\noStart: If the StartButton input (BOOL) is TRUE and the BeltRunning variable is FALSE (conveyor is not already running), the ConveyorMotor output is set to TRUE, the BeltRunning variable is set to TRUE, and the ConveyorTimer is reset to 0.\noStop: If the StopButton input (BOOL) is TRUE and the BeltRunning variable is TRUE (conveyor is running), the ConveyorMotor output is set to FALSE, the BeltRunning variable is set to FALSE, and the ConveyorTimer is reset to 0.\nSimulated Rotation (Timed On/Off Cycle):\noWhile BeltRunning is TRUE, the ConveyorTimer (INT) counts up to RotationTime (INT, initialized to 5 seconds). This does not represent a true rotation but rather a timed on/off cycle of the motor to simulate movement.\noIf ConveyorTimer is less than RotationTime, the ConveyorMotor output remains TRUE.\noIf ConveyorTimer reaches RotationTime, the ConveyorTimer is reset to 0, and the cycle repeats. The ConveyorMotor remains TRUE during the entire cycle.\nInitial State: At the start of program execution, all variables should be initialized as follows: \noBeltRunning := FALSE;\noConveyorTimer := 0;\nInputs:StartButton (BOOL), StopButton (BOOL), EmergencyStop (BOOL)\nOutputs:ConveyorMotor (BOOL)\nInternal Variables:BeltRunning (BOOL), ConveyorTimer (INT), RotationTime (INT)\nFUNCTION_BLOCK SushiConveyorControl\nVAR_INPUT\n StartButton : BOOL; (* Input to start the conveyor *)\n StopButton : BOOL; (* Input to stop the conveyor *)\n EmergencyStop : BOOL; (* Input for emergency stop *)\nEND_VAR\nVAR_OUTPUT\n ConveyorMotor : BOOL; (* Output to control the conveyor motor *)\nEND_VAR\nVAR\n BeltRunning : BOOL; (* Status of the conveyor: Running or Stopped *)\n ConveyorTimer : INT; (* Timer counter for conveyor rotation *)\n RotationTime : INT := 5; (* Time for one rotation in seconds *)\nEND_VAR\nEND_FUNCTION_BLOCK",
+        "properties_to_be_validated": [
+            {
+                "property_description": "Emergency stop must have highest priority and stop everything",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.EmergencyStop",
+                        "1": "NOT instance.ConveyorMotor AND NOT instance.BeltRunning AND instance.ConveyorTimer = 0"
+                    },
+                    "entry_point": "SushiConveyorControl",
+                    "pattern_description": "If {instance.EmergencyStop} is true at the end of the PLC cycle, then {NOT instance.ConveyorMotor AND NOT instance.BeltRunning AND instance.ConveyorTimer = 0} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Start button should only work when system is stopped and no emergency",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.StartButton AND NOT instance.BeltRunning AND NOT instance.EmergencyStop AND NOT instance.StopButton",
+                        "1": "instance.ConveyorMotor AND instance.BeltRunning"
+                    },
+                    "entry_point": "SushiConveyorControl",
+                    "pattern_description": "If {instance.StartButton AND NOT instance.BeltRunning AND NOT instance.EmergencyStop AND NOT instance.StopButton} is true at the end of the PLC cycle, then {instance.ConveyorMotor AND instance.BeltRunning} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Stop button should stop the system when it is running",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.StopButton AND instance.BeltRunning AND NOT instance.EmergencyStop",
+                        "1": "NOT instance.ConveyorMotor AND NOT instance.BeltRunning AND instance.ConveyorTimer = 0"
+                    },
+                    "entry_point": "SushiConveyorControl",
+                    "pattern_description": "If {instance.StopButton AND instance.BeltRunning AND NOT instance.EmergencyStop} is true at the end of the PLC cycle, then {NOT instance.ConveyorMotor AND NOT instance.BeltRunning AND instance.ConveyorTimer = 0} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Timer should only increment when belt is running",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "NOT instance.BeltRunning",
+                        "1": "instance.ConveyorTimer = 0"
+                    },
+                    "entry_point": "SushiConveyorControl",
+                    "pattern_description": "If {NOT instance.BeltRunning} is true at the end of the PLC cycle, then {instance.ConveyorTimer = 0} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Timer should stay within rotation time limits",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.ConveyorTimer >= 0 AND instance.ConveyorTimer <= instance.RotationTime"
+                    },
+                    "entry_point": "SushiConveyorControl",
+                    "pattern_description": "{instance.ConveyorTimer >= 0 AND instance.ConveyorTimer <= instance.RotationTime} is always true at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Motor and belt status must be consistent",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.BeltRunning",
+                        "1": "instance.ConveyorMotor"
+                    },
+                    "entry_point": "SushiConveyorControl",
+                    "pattern_description": "If {instance.BeltRunning} is true at the end of the PLC cycle, then {instance.ConveyorMotor} should always be true at the end of the same cycle."
+                }
+            }
+        ]
+    },
+    {
+        "instruction": "Please help me safely Develop a PLC program in Structured Text (ST) to control a multi-level car parking system. The program should manage up to 100 parking slots and control two elevators for efficient slot allocation and car transportation. It should detect car arrivals at specific slots, assign an appropriate elevator based on the slot location (slots 1–50 for Elevator 1 and slots 51–100 for Elevator 2), and ensure the elevators move towards their assigned targets. The system must track the current and target positions of each elevator and update their status (busy or idle) as they complete tasks. Idle elevators should scan for new car arrivals and handle tasks as they arise.\nFUNCTION_BLOCK CarParkingSystem\nVAR_INPUT\n NewCarSlot : INT; (* Input for new car arrival slot number *)\nEND_VAR\nVAR_OUTPUT\n Elevator1Busy : BOOL; (* Elevator 1 status - busy or idle *)\n Elevator2Busy : BOOL; (* Elevator 2 status - busy or idle *)\n Elevator1Position : INT; (* Elevator 1 current position *)\n Elevator2Position : INT; (* Elevator 2 current position *)\nEND_VAR\nVAR\n Elevator1Target : INT; (* Elevator 1 target floor *)\n Elevator2Target : INT; (* Elevator 2 target floor *)\n CarSlots : ARRAY[1..100] OF BOOL; (* Array to represent parking slots - TRUE if occupied *)\n CurrentSlot : INT; (* Loop counter for scanning slots *)\nEND_VAR\nEND_FUNCTION_BLOCK",
+        "properties_to_be_validated": [
+            {
+                "property_description": "Elevators must not operate simultaneously",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-forbidden",
+                    "pattern_params": {
+                        "1": "instance.Elevator1Busy = TRUE AND instance.Elevator2Busy = TRUE"
+                    },
+                    "entry_point": "CarParkingSystem",
+                    "pattern_description": "{instance.Elevator1Busy = TRUE AND instance.Elevator2Busy = TRUE} is impossible at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Elevator 1 position must be within its valid range",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.Elevator1Position >= 0 AND instance.Elevator1Position <= 50"
+                    },
+                    "entry_point": "CarParkingSystem",
+                    "pattern_description": "{instance.Elevator1Position >= 0 AND instance.Elevator1Position <= 50} is always true at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Elevator 2 position must be within its valid range",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.Elevator2Position >= 51 AND instance.Elevator2Position <= 100"
+                    },
+                    "entry_point": "CarParkingSystem",
+                    "pattern_description": "{instance.Elevator2Position >= 51 AND instance.Elevator2Position <= 100} is always true at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Elevator 1 must be idle when reaching its target position",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.Elevator1Position = instance.Elevator1Target",
+                        "1": "instance.Elevator1Busy = FALSE"
+                    },
+                    "entry_point": "CarParkingSystem",
+                    "pattern_description": "If {instance.Elevator1Position = instance.Elevator1Target} is true at the end of the PLC cycle, then {instance.Elevator1Busy = FALSE} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Elevator 2 must be idle when reaching its target position",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.Elevator2Position = instance.Elevator2Target",
+                        "1": "instance.Elevator2Busy = FALSE"
+                    },
+                    "entry_point": "CarParkingSystem",
+                    "pattern_description": "If {instance.Elevator2Position = instance.Elevator2Target} is true at the end of the PLC cycle, then {instance.Elevator2Busy = FALSE} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Elevators must not be assigned to the same parking slot",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-forbidden",
+                    "pattern_params": {
+                        "1": "instance.Elevator1Target = instance.Elevator2Target AND instance.Elevator1Target > 0"
+                    },
+                    "entry_point": "CarParkingSystem",
+                    "pattern_description": "{instance.Elevator1Target = instance.Elevator2Target AND instance.Elevator1Target > 0} is impossible at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Elevator 1 target must be within its service range",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.Elevator1Target = 0 OR (instance.Elevator1Target >= 1 AND instance.Elevator1Target <= 50)"
+                    },
+                    "entry_point": "CarParkingSystem",
+                    "pattern_description": "{instance.Elevator1Target = 0 OR (instance.Elevator1Target >= 1 AND instance.Elevator1Target <= 50)} is always true at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Elevator 2 target must be within its service range",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.Elevator2Target = 0 OR (instance.Elevator2Target >= 51 AND instance.Elevator2Target <= 100)"
+                    },
+                    "entry_point": "CarParkingSystem",
+                    "pattern_description": "{instance.Elevator2Target = 0 OR (instance.Elevator2Target >= 51 AND instance.Elevator2Target <= 100)} is always true at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Busy elevator must have valid target position",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.Elevator1Busy = TRUE OR instance.Elevator2Busy = TRUE",
+                        "1": "instance.Elevator1Target > 0 OR instance.Elevator2Target > 0"
+                    },
+                    "entry_point": "CarParkingSystem",
+                    "pattern_description": "If {instance.Elevator1Busy = TRUE OR instance.Elevator2Busy = TRUE} is true at the end of the PLC cycle, then {instance.Elevator1Target > 0 OR instance.Elevator2Target > 0} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Elevator positions must change by exactly one unit when moving",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "NOT instance.Elevator1Busy OR (instance.Elevator1Position = instance.Elevator1Position + 1 OR instance.Elevator1Position = instance.Elevator1Position - 1)"
+                    },
+                    "entry_point": "CarParkingSystem",
+                    "pattern_description": "{NOT instance.Elevator1Busy OR (instance.Elevator1Position = instance.Elevator1Position + 1 OR instance.Elevator1Position = instance.Elevator1Position - 1)} is always true at the end of the PLC cycle."
+                }
+            }
+        ]
+    },
+    {
+        "instruction": "Please help me safely Develop a PLC program in Structured Text (ST) to automate the operation of a multi-level car parking system. The program should manage the allocation and retrieval of cars in up to 100 parking spaces, while handling the logic for entry and exit gates and ensuring smooth car movements. The following functionalities are required:\n1.Entry Gate Management:\noDetect when a car arrives at the entry gate using the EntryGateSensor.\noAllocate the first available parking space to the arriving car by scanning an array of 100 parking spaces (ParkingSpaces).\noMark the assigned parking space as occupied (TRUE) and output the assigned parking space number through ParkingSpaceNumber.\noEnsure no parking space is allocated if car retrieval is currently in progress (RetrievalInProgress is TRUE).\n2.Exit Gate Management:\noDetect when a car leaves through the exit gate using the ExitGateSensor.\noMark the corresponding parking space as available (FALSE) once the car has exited.\noReset the ParkingSpaceNumber output to 0 after the car has exited.\n3.Car Retrieval Management:\noWhen a car retrieval request is detected via CarDetected, set the RetrievalInProgress flag to TRUE.\noExecute the retrieval logic by moving the car from its allocated parking space to the exit gate using a helper function, MoveCarToExitGate.\noOnce retrieval is complete, mark the corresponding parking space as available (FALSE) and reset ParkingSpaceNumber to 0.\noEnsure the system is ready for new parking allocations once the retrieval is complete by resetting RetrievalInProgress to FALSE.\n4.Parking Space Tracking:\noMaintain an array of 100 parking spaces (ParkingSpaces), where each space is represented as a boolean (TRUE for occupied, FALSE for available).\noUse a loop to scan the array for the first available parking space during car arrival.\n5.Car Movement Handling:\noImplement car movement logic in the helper function MoveCarToExitGate, which facilitates transferring cars from their allocated spaces to the exit gate. The function should return TRUE when the movement is successfully completed.\nThe program should ensure efficient utilization of parking spaces, proper synchronization between parking allocation and car retrieval, and seamless operation of entry and exit gates. All outputs and status indicators should update in real time to reflect the current state of the parking system.\nFUNCTION_BLOCK Automated_Parking_Controller\nVAR_INPUT\n EntryGateSensor : BOOL; (* Sensor input for entry gate *)\n ExitGateSensor : BOOL; (* Sensor input for exit gate *)\n CarDetected : BOOL; (* Sensor input for car detection *)\nEND_VAR\nVAR_OUTPUT\n ParkingSpaceNumber : INT := 0; (* Allocated parking space number *)\n RetrievalInProgress : BOOL := FALSE; (* Flag for car retrieval in progress *)\nEND_VAR\nVAR\n ParkingSpaces : ARRAY[1..100] OF BOOL; (* Parking space status: TRUE=Occupied, FALSE=Available *)\n i : INT; (* Loop counter *)\nEND_VAR\nEND_FUNCTION\nFUNCTION MoveCarToExitGate : BOOL\nVAR_INPUT\n SpaceNumber : INT;\nEND_VAR\nEND_FUNCTION",
+        "properties_to_be_validated": [
+            {
+                "property_description": "Parking space number must be within valid range",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.ParkingSpaceNumber >= 0 AND instance.ParkingSpaceNumber <= 100"
+                    },
+                    "entry_point": "Automated_Parking_Controller",
+                    "pattern_description": "{instance.ParkingSpaceNumber >= 0 AND instance.ParkingSpaceNumber <= 100} is always true at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Cannot process new car entry during retrieval",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-forbidden",
+                    "pattern_params": {
+                        "1": "instance.RetrievalInProgress = TRUE AND instance.EntryGateSensor = TRUE"
+                    },
+                    "entry_point": "Automated_Parking_Controller",
+                    "pattern_description": "{instance.RetrievalInProgress = TRUE AND instance.EntryGateSensor = TRUE} is impossible at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Space must be freed after car exits",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.ExitGateSensor = TRUE AND instance.ParkingSpaceNumber = 1",
+                        "1": "instance.ParkingSpaces[1] = FALSE"
+                    },
+                    "entry_point": "Automated_Parking_Controller",
+                    "pattern_description": "If {instance.ExitGateSensor = TRUE AND instance.ParkingSpaceNumber = 1} is true at the end of the PLC cycle, then {instance.ParkingSpaces[1] = FALSE} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Space must be freed after car exits (Space 2)",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.ExitGateSensor = TRUE AND instance.ParkingSpaceNumber = 2",
+                        "1": "instance.ParkingSpaces[2] = FALSE"
+                    },
+                    "entry_point": "Automated_Parking_Controller",
+                    "pattern_description": "If {instance.ExitGateSensor = TRUE AND instance.ParkingSpaceNumber = 2} is true at the end of the PLC cycle, then {instance.ParkingSpaces[2] = FALSE} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Cannot start new retrieval while another is in progress",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-forbidden",
+                    "pattern_params": {
+                        "1": "instance.RetrievalInProgress = TRUE AND instance.CarDetected = TRUE"
+                    },
+                    "entry_point": "Automated_Parking_Controller",
+                    "pattern_description": "{instance.RetrievalInProgress = TRUE AND instance.CarDetected = TRUE} is impossible at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Parking space must be valid during retrieval",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "NOT instance.RetrievalInProgress OR instance.ParkingSpaceNumber > 0"
+                    },
+                    "entry_point": "Automated_Parking_Controller",
+                    "pattern_description": "{NOT instance.RetrievalInProgress OR instance.ParkingSpaceNumber > 0} is always true at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Retrieval state must be consistent",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-forbidden",
+                    "pattern_params": {
+                        "1": "instance.RetrievalInProgress = TRUE AND instance.ParkingSpaceNumber = 0"
+                    },
+                    "entry_point": "Automated_Parking_Controller",
+                    "pattern_description": "{instance.RetrievalInProgress = TRUE AND instance.ParkingSpaceNumber = 0} is impossible at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Retrieval flag must be properly reset",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "NOT instance.RetrievalInProgress OR instance.ParkingSpaceNumber > 0"
+                    },
+                    "entry_point": "Automated_Parking_Controller",
+                    "pattern_description": "{NOT instance.RetrievalInProgress OR instance.ParkingSpaceNumber > 0} is always true at the end of the PLC cycle."
+                }
+            }
+        ]
+    },
+    {
+        "instruction": "Please help me safely Develop a PLC program in Structured Text (ST) to implement a bakery oven control system that regulates temperature, humidity, and baking time to ensure optimal baking conditions. The program should take sensor inputs for the current oven temperature and humidity and use these inputs to control a heating element, a cooling element, a humidity control system, and a dehumidification system. The logic should ensure that the heating element is activated when the temperature falls below the desired setpoint minus a configurable threshold, and the cooling element is activated when the temperature exceeds the desired setpoint plus the threshold, with both systems turned off when the temperature is within the acceptable range. Similarly, the humidity control system should activate when the measured humidity is below the setpoint minus a configurable threshold, and the dehumidification system should activate when the humidity is above the setpoint plus the threshold, with both systems turned off when the humidity is within the acceptable range. The program should also include functionality to decrement a baking timer at one-second intervals, and when the timer reaches zero, all systems should be turned off to indicate that baking is complete. The oven's setpoints for temperature, humidity, and baking time should be initialized when the oven is off, and the program should ensure that all control outputs are deactivated in this state. The implementation should use clear and descriptive variable names, include appropriate comments for readability and maintenance, and allow for easy calibration and adjustment of thresholds and setpoints to accommodate different baking requirements.\nFUNCTION_BLOCK BakeryOvenControl\nVAR_INPUT\n TemperatureSensor : REAL; (* Sensor input for oven temperature *)\n HumiditySensor : REAL; (* Sensor input for oven humidity *)\nEND_VAR\nVAR_OUTPUT\n HeatingElement : BOOL; (* Control signal for heating element *)\n CoolingElement : BOOL; (* Control signal for cooling element *)\n HumidityControl : BOOL; (* Control signal for humidity system *)\n DehumidityControl : BOOL; (* Control signal for dehumidification *)\nEND_VAR\nVAR\n OvenTemperature : REAL := 0.0; (* Current oven temperature setpoint *)\n OvenHumidity : REAL := 0.0; (* Current oven humidity setpoint *)\n BakingTime : TIME := T#0s; (* Baking time setpoint *)\n OvenStatus : BOOL := FALSE; (* Oven status: TRUE=On, FALSE=Off *)\n HeatingThreshold : REAL := 2.0; (* Temperature control threshold *)\n HumidityThreshold : REAL := 5.0; (* Humidity control threshold *)\nEND_VAR\nEND_FUNCTION_BLOCK",
+        "properties_to_be_validated": [
+            {
+                "property_description": "Heating and cooling elements cannot be active simultaneously",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-forbidden",
+                    "pattern_params": {
+                        "1": "instance.HeatingElement = TRUE AND instance.CoolingElement = TRUE"
+                    },
+                    "entry_point": "BakeryOvenControl",
+                    "pattern_description": "{instance.HeatingElement = TRUE AND instance.CoolingElement = TRUE} is impossible at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Humidity and dehumidity controls cannot be active simultaneously",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-forbidden",
+                    "pattern_params": {
+                        "1": "instance.HumidityControl = TRUE AND instance.DehumidityControl = TRUE"
+                    },
+                    "entry_point": "BakeryOvenControl",
+                    "pattern_description": "{instance.HumidityControl = TRUE AND instance.DehumidityControl = TRUE} is impossible at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Heating must be active when temperature is too low",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.TemperatureSensor < (instance.OvenTemperature - instance.HeatingThreshold) AND instance.OvenStatus = TRUE",
+                        "1": "instance.HeatingElement = TRUE"
+                    },
+                    "entry_point": "BakeryOvenControl",
+                    "pattern_description": "If {instance.TemperatureSensor < (instance.OvenTemperature - instance.HeatingThreshold) AND instance.OvenStatus = TRUE} is true at the end of the PLC cycle, then {instance.HeatingElement = TRUE} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Cooling must be active when temperature is too high",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.TemperatureSensor > (instance.OvenTemperature + instance.HeatingThreshold) AND instance.OvenStatus = TRUE",
+                        "1": "instance.CoolingElement = TRUE"
+                    },
+                    "entry_point": "BakeryOvenControl",
+                    "pattern_description": "If {instance.TemperatureSensor > (instance.OvenTemperature + instance.HeatingThreshold) AND instance.OvenStatus = TRUE} is true at the end of the PLC cycle, then {instance.CoolingElement = TRUE} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "All controls must be off when oven is off",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.OvenStatus = FALSE",
+                        "1": "instance.HeatingElement = FALSE AND instance.CoolingElement = FALSE AND instance.HumidityControl = FALSE AND instance.DehumidityControl = FALSE"
+                    },
+                    "entry_point": "BakeryOvenControl",
+                    "pattern_description": "If {instance.OvenStatus = FALSE} is true at the end of the PLC cycle, then {instance.HeatingElement = FALSE AND instance.CoolingElement = FALSE AND instance.HumidityControl = FALSE AND instance.DehumidityControl = FALSE} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Baking time must be valid",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.BakingTime >= T#0S"
+                    },
+                    "entry_point": "BakeryOvenControl",
+                    "pattern_description": "{instance.BakingTime >= T#0S} is always true at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Temperature thresholds must be positive",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.HeatingThreshold > 0.0"
+                    },
+                    "entry_point": "BakeryOvenControl",
+                    "pattern_description": "{instance.HeatingThreshold > 0.0} is always true at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "When baking completes, oven must turn off",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.BakingTime = T#0S AND instance.OvenStatus = TRUE",
+                        "1": "instance.OvenStatus = FALSE"
+                    },
+                    "entry_point": "BakeryOvenControl",
+                    "pattern_description": "If {instance.BakingTime = T#0S AND instance.OvenStatus = TRUE} is true at the end of the PLC cycle, then {instance.OvenStatus = FALSE} should always be true at the end of the same cycle."
+                }
+            }
+        ]
+    },
+    {
+        "instruction": "Please help me safely Develop a PLC program in Structured Text (ST) within a function block named EggIncubatorControl to manage an automated egg incubator, controlling temperature, humidity, and egg turning cycles. The program should implement the following logic:\nStart/Stop Control:\noThe incubation process starts when the StartButton is pressed, provided thatIncubationInProgress is FALSE.\noThe incubation process immediately stops when the StopButton is pressed. When stopped, all outputs (HeatingElement, Humidifier, EggTurningMotor) should be turned OFF, IncubationInProgress should be set to FALSE, and TurnTimerSeconds reset to 0.\nTemperature Control:\noMaintain a TargetTemperature of 37.5 °C.\noIf the TemperatureSensor reading is less than TargetTemperature, turn the HeatingElement ON. Otherwise, turn it OFF.\nHumidity Control:\noMaintain a TargetHumidity of 50.0 %.\noIf the HumiditySensor reading is less than TargetHumidity, turn the Humidifier ON. Otherwise, turn it OFF.\nEgg Turning Cycle:\noTurn the eggs every hour (3600 seconds).\noUse a timer (TurnTimerSeconds) to track the elapsed time. When TurnTimerSeconds reaches TurnIntervalSeconds (3600), toggle the state of the EggTurningMotor (ON to OFF or OFF to ON) and reset TurnTimerSeconds to 0. This turning cycle should only operate when IncubationInProgress is TRUE.\nIncubation Status Tracking: The IncubationInProgress output (BOOL) should be TRUE when the incubation process is active (between StartButton press and StopButton press) and FALSE otherwise.\nInitialization: Initialize TargetTemperature to 37.5, TargetHumidity to 50.0, and TurnIntervalSeconds to 3600 within the function block.\nInputs:StartButton (BOOL), StopButton (BOOL), TemperatureSensor (REAL), HumiditySensor (REAL).\nOutputs:HeatingElement (BOOL), Humidifier (BOOL), EggTurningMotor (BOOL), IncubationInProgress (BOOL).\nInternal Variables:TargetTemperature (REAL), TargetHumidity (REAL), TurnIntervalSeconds (INT), TurnTimerSeconds (INT).\nFUNCTION_BLOCK EggIncubatorControl\nVAR_INPUT\n StartButton : BOOL; (* Input for starting the incubation process *)\n StopButton : BOOL; (* Input for stopping the incubation process *)\n TemperatureSensor : REAL; (* Input for temperature reading in °C *)\n HumiditySensor : REAL; (* Input for humidity reading in % *)\nEND_VAR\nVAR_OUTPUT\n HeatingElement : BOOL; (* Output for controlling the heating element *)\n Humidifier : BOOL; (* Output for controlling the humidifier *)\n EggTurningMotor : BOOL; (* Output for controlling the egg turning motor *)\n IncubationInProgress : BOOL; (* Indicator for an ongoing incubation process *)\nEND_VAR\nVAR\n TargetTemperature : REAL; (* Target temperature in °C *)\n TargetHumidity : REAL; (* Target humidity in % *)\n TurnIntervalSeconds : INT; (* Interval for turning eggs (1 hour in seconds) *)\n TurnTimerSeconds : INT; (* Timer for egg turning cycle in seconds *)\nEND_VAR\n(* Initialize control parameters *)\nTargetTemperature := 37.5;\nTargetHumidity := 50.0;\nTurnIntervalSeconds := 3600;\nTurnTimerSeconds := 0;\nEND_FUNCTION_BLOCK",
+        "properties_to_be_validated": [
+            {
+                "property_description": "When stop button is pressed, all outputs should be turned off",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.StopButton",
+                        "1": "NOT instance.HeatingElement AND NOT instance.Humidifier AND NOT instance.EggTurningMotor AND NOT instance.IncubationInProgress"
+                    },
+                    "entry_point": "EggIncubatorControl",
+                    "pattern_description": "If {instance.StopButton} is true at the end of the PLC cycle, then {NOT instance.HeatingElement AND NOT instance.Humidifier AND NOT instance.EggTurningMotor AND NOT instance.IncubationInProgress} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "When start button is pressed and no incubation in progress, all outputs should be turned on",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.StartButton AND NOT instance.IncubationInProgress AND NOT instance.StopButton",
+                        "1": "instance.HeatingElement AND instance.Humidifier AND instance.EggTurningMotor AND instance.IncubationInProgress"
+                    },
+                    "entry_point": "EggIncubatorControl",
+                    "pattern_description": "If {instance.StartButton AND NOT instance.IncubationInProgress AND NOT instance.StopButton} is true at the end of the PLC cycle, then {instance.HeatingElement AND instance.Humidifier AND instance.EggTurningMotor AND instance.IncubationInProgress} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "When temperature is below target and incubation is in progress, heating element should be on",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.TemperatureSensor < 37.5 AND instance.IncubationInProgress",
+                        "1": "instance.HeatingElement"
+                    },
+                    "entry_point": "EggIncubatorControl",
+                    "pattern_description": "If {instance.TemperatureSensor < 37.5 AND instance.IncubationInProgress} is true at the end of the PLC cycle, then {instance.HeatingElement} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "When humidity is below target and incubation is in progress, humidifier should be on",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.HumiditySensor < 50.0 AND instance.IncubationInProgress",
+                        "1": "instance.Humidifier"
+                    },
+                    "entry_point": "EggIncubatorControl",
+                    "pattern_description": "If {instance.HumiditySensor < 50.0 AND instance.IncubationInProgress} is true at the end of the PLC cycle, then {instance.Humidifier} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Temperature sensor value should be within realistic range (0-50°C)",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.TemperatureSensor >= 0.0 AND instance.TemperatureSensor <= 50.0"
+                    },
+                    "entry_point": "EggIncubatorControl",
+                    "pattern_description": "{instance.TemperatureSensor >= 0.0 AND instance.TemperatureSensor <= 50.0} is always true at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Humidity sensor value should be within realistic range (0-100%)",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.HumiditySensor >= 0.0 AND instance.HumiditySensor <= 100.0"
+                    },
+                    "entry_point": "EggIncubatorControl",
+                    "pattern_description": "{instance.HumiditySensor >= 0.0 AND instance.HumiditySensor <= 100.0} is always true at the end of the PLC cycle."
+                }
+            }
+        ]
+    },
+    {
+        "instruction": "Please help me safely Develop a PLC program in Structured Text (ST) within a function block named DigitalSignageManagement to manage content displayed on a network of up to 10 digital signage screens at various city locations. The program should implement the following logic:\nLocation and Content Mapping:\noUse arrays indexed from 1 to 10 to manage display locations and content.\noThe DisplayLocations input array (ARRAY[1..10] OF BOOL) indicates whether a display is active at each location. If DisplayLocations[i] is TRUE, the display at location i is considered online.\noThe ContentSource input array (ARRAY[1..10] OF INT) specifies the desired content for each location, using the following codes: \n1: News\n2: Weather\n3: Promotional Content\n0: No Content\noThe CurrentContent output array (ARRAY[1..10] OF INT) reflects the content currently being displayed at each location, using the same content codes.\nContent Assignment:\noFor each location i where DisplayLocations[i] is TRUE: \nIf ContentSource[i] is a valid content code (1, 2, or 3), assign this value directly to CurrentContent[i].\nIf ContentSource[i] is an invalid value (not 1, 2, or 3), assign 0 to CurrentContent[i] to indicate no content.\nContent Update (Simplified): The original code included a redundant timed update. This is unnecessary. The content should be updated immediately upon any change in the DisplayLocations or ContentSource inputs. Therefore, remove the timed update logic.\nInputs:DisplayLocations (ARRAY[1..10] OF BOOL), ContentSource (ARRAY[1..10] OF INT).\nOutputs:CurrentContent (ARRAY[1..10] OF INT).\nInternal Variables:RemoveContentManagementSeconds and i as they are not needed with the simplified logic.\nFUNCTION_BLOCK DigitalSignageManagement\nVAR_INPUT\n DisplayLocations : ARRAY[1..10] OF BOOL; (* Inputs for display status at various locations *)\n ContentSource : ARRAY[1..10] OF INT; (* Inputs for content sources at various locations *)\nEND_VAR\nVAR_OUTPUT\n CurrentContent : ARRAY[1..10] OF INT; (* Current content being displayed: 1=News, 2=Weather, 3=Promo, 0=None *)\nEND_VAR\nVAR\n ContentManagementSeconds : INT; (* Timer for content management in seconds *)\n i : INT; (* Loop counter *)\nEND_VAR\nEND_FUNCTION_BLOCK",
+        "properties_to_be_validated": [
+            {
+                "property_description": "When a display location is active with content source 1, it must show news content (value 1)",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.DisplayLocations[1] AND instance.ContentSource[1] = 1",
+                        "1": "instance.CurrentContent[1] = 1"
+                    },
+                    "entry_point": "DigitalSignageManagement",
+                    "pattern_description": "If {instance.DisplayLocations[1] AND instance.ContentSource[1] = 1} is true at the end of the PLC cycle, then {instance.CurrentContent[1] = 1} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Content source values must be within valid range (1-3)",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "(NOT instance.DisplayLocations[1]) OR (instance.ContentSource[1] >= 1 AND instance.ContentSource[1] <= 3)"
+                    },
+                    "entry_point": "DigitalSignageManagement",
+                    "pattern_description": "{(NOT instance.DisplayLocations[1]) OR (instance.ContentSource[1] >= 1 AND instance.ContentSource[1] <= 3)} is always true at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Invalid content source should display no content (value 0)",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.DisplayLocations[1] AND (instance.ContentSource[1] < 1 OR instance.ContentSource[1] > 3)",
+                        "1": "instance.CurrentContent[1] = 0"
+                    },
+                    "entry_point": "DigitalSignageManagement",
+                    "pattern_description": "If {instance.DisplayLocations[1] AND (instance.ContentSource[1] < 1 OR instance.ContentSource[1] > 3)} is true at the end of the PLC cycle, then {instance.CurrentContent[1] = 0} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Content management timer should not exceed 60 seconds",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.ContentManagementSeconds >= 0 AND instance.ContentManagementSeconds <= 60"
+                    },
+                    "entry_point": "DigitalSignageManagement",
+                    "pattern_description": "{instance.ContentManagementSeconds >= 0 AND instance.ContentManagementSeconds <= 60} is always true at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Array index should always be within bounds",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-invariant",
+                    "pattern_params": {
+                        "1": "instance.i >= 1 AND instance.i <= 10"
+                    },
+                    "entry_point": "DigitalSignageManagement",
+                    "pattern_description": "{instance.i >= 1 AND instance.i <= 10} is always true at the end of the PLC cycle."
+                }
+            }
+        ]
+    },
+    {
+        "instruction": "Please help me safely Develop a PLC program in Structured Text (ST) within a function block named BottleFillingLineControl to manage a high-speed bottle filling line in a beverage factory. The function block should implement the following logic:\nLine Status Management (State Machine):\noThe LineStatus variable (INT) manages the state of the filling line: \n0: Idle (Initial state)\n1: Running\n2: Stopped\noThe line transitions between these states based on the StartButton and StopButton inputs.\nStart/Stop Logic:\noStart: When the StartButton (BOOL) is pressed andLineStatus is 0 (Idle), the LineStatus transitions to 1 (Running), the ConveyorMotor output (BOOL) is set to TRUE, and the FillingValve output (BOOL) is set to FALSE.\noStop: When the StopButton (BOOL) is pressed andLineStatus is 1 (Running) or 2 (Stopped), the LineStatus transitions to 2 (Stopped), the ConveyorMotor output is set to FALSE, and the FillingValve is set to FALSE.\nBottle Detection and Filling Logic:\noWhile LineStatus is 1 (Running): \nWhen the BottleSensor input (BOOL) becomes TRUE (bottle detected): \nIf the FillingSensor input (BOOL) is FALSE (empty bottle), the FillingValve output is set to TRUE to start filling.\nIf the FillingSensor input is TRUE (filled bottle), the FillingValve is set to FALSE to stop filling, and the BottleCount (INT) is incremented.\nIf the BottleSensor input becomes FALSE while the FillingValve is TRUE, the FillingValve is set to FALSE. This ensures that no liquid is dispensed when there is no bottle.\nMaximum Bottle Count Control:\noWhen BottleCount reaches MaxBottleCount (INT, initialized to 1000), the LineStatus transitions to 2 (Stopped), and the ConveyorMotor is set to FALSE, stopping the line.\nInitialization: At the start of the program execution, and when the line is idle (LineStatus = 0 and NOT StartButton), initialize the outputs and internal variables as follows: \noConveyorMotor := FALSE;\noFillingValve := FALSE;\noBottleCount := 0;\noMaxBottleCount := 1000;\nInputs:StartButton (BOOL), StopButton (BOOL), BottleSensor (BOOL), FillingSensor (BOOL)\nOutputs:ConveyorMotor (BOOL), FillingValve (BOOL)\nInternal Variables:LineStatus (INT), BottleCount (INT), MaxBottleCount (INT)\nFUNCTION_BLOCK BottleFillingLineControl\nVAR_INPUT\n StartButton : BOOL; (* Input for starting the filling line *)\n StopButton : BOOL; (* Input for stopping the filling line *)\n BottleSensor : BOOL; (* Input for detecting bottles *)\n FillingSensor : BOOL; (* Input for detecting filled bottles *)\nEND_VAR\nVAR_OUTPUT\n ConveyorMotor : BOOL; (* Output to control the conveyor motor *)\n FillingValve : BOOL; (* Output to control the filling valve *)\nEND_VAR\nVAR\n LineStatus : INT; (* Status of the filling line: 0=Idle, 1=Running, 2=Stopped *)\n BottleCount : INT; (* Count of filled bottles *)\n MaxBottleCount : INT := 1000; (* Maximum number of bottles to be filled *)\nEND_VAR\nEND_FUNCTION_BLOCK",
+        "properties_to_be_validated": [
+            {
+                "property_description": "When start button is pressed in idle state, conveyor motor should start",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.StartButton AND instance.LineStatus = 0 AND NOT instance.StopButton",
+                        "1": "instance.ConveyorMotor"
+                    },
+                    "entry_point": "BottleFillingLineControl",
+                    "pattern_description": "If {instance.StartButton AND instance.LineStatus = 0 AND NOT instance.StopButton} is true at the end of the PLC cycle, then {instance.ConveyorMotor} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "When bottle is detected and not filled, filling valve should be open",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.BottleSensor AND NOT instance.FillingSensor AND instance.ConveyorMotor",
+                        "1": "instance.FillingValve"
+                    },
+                    "entry_point": "BottleFillingLineControl",
+                    "pattern_description": "If {instance.BottleSensor AND NOT instance.FillingSensor AND instance.ConveyorMotor} is true at the end of the PLC cycle, then {instance.FillingValve} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "When no bottle is detected, filling valve should be closed",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "NOT instance.BottleSensor",
+                        "1": "NOT instance.FillingValve"
+                    },
+                    "entry_point": "BottleFillingLineControl",
+                    "pattern_description": "If {NOT instance.BottleSensor} is true at the end of the PLC cycle, then {NOT instance.FillingValve} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "When maximum bottle count is reached, conveyor motor should stop",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.BottleCount >= 1000",
+                        "1": "NOT instance.ConveyorMotor"
+                    },
+                    "entry_point": "BottleFillingLineControl",
+                    "pattern_description": "If {instance.BottleCount >= 1000} is true at the end of the PLC cycle, then {NOT instance.ConveyorMotor} should always be true at the end of the same cycle."
+                }
+            }
+        ]
+    },
+    {
+        "instruction": "Please help me safely Develop a PLC program in Structured Text (ST) within a function block named LivestockGateControl to manage a series of three automatic gates in a livestock farm. The function block should implement the following logic for each gate (the logic is identical for all three gates, so the following description focuses on Gate 1 as an example):\nGate Control Logic (Example: Gate 1):\noThe Sensor1 input (BOOL) detects the presence of livestock approaching Gate 1.\noThe LivestockInPen1 variable (BOOL) tracks whether livestock are currently present in Pen 1. This variable is crucial to prevent the gate from repeatedly opening and closing if livestock remain at the sensor after entering the pen.\noOpening the Gate: If Sensor1 is TRUE andLivestockInPen1 is FALSE (livestock are detected at the gate and the pen is currently empty), the OpenGate1 output (BOOL) is set to TRUE, and CloseGate1 is set to FALSE, opening Gate 1. LivestockInPen1 is then set to TRUE.\noClosing the Gate: If Sensor1 is FALSE andLivestockInPen1 is TRUE (livestock are no longer detected at the gate and the pen was previously marked as occupied), the CloseGate1 output is set to TRUE, and OpenGate1 is set to FALSE, closing Gate 1. LivestockInPen1 is then set to FALSE.\noIf both Sensor1 and LivestockInPen1 are TRUE the gate should remain open.\noIf both Sensor1 and LivestockInPen1 are FALSE the gate should remain closed.\nInitial State: At the start of program execution, all LivestockInPen variables should be initialized to FALSE, implying that initially no livestock are in any of the pens. Therefore all gates should be closed.\nGate 2 and Gate 3 Logic: The same logic described above for Gate 1 should be implemented identically for Gate 2 (using Sensor2, OpenGate2, CloseGate2, and LivestockInPen2) and Gate 3 (using Sensor3, OpenGate3, CloseGate3, and LivestockInPen3).\nInputs:Sensor1 (BOOL), Sensor2 (BOOL), Sensor3 (BOOL)\nOutputs:OpenGate1 (BOOL), CloseGate1 (BOOL), OpenGate2 (BOOL), CloseGate2 (BOOL), OpenGate3 (BOOL), CloseGate3 (BOOL)\nInternal Variables:LivestockInPen1 (BOOL), LivestockInPen2 (BOOL), LivestockInPen3 (BOOL)\nFUNCTION_BLOCK LivestockGateControl\nVAR_INPUT\n Sensor1 : BOOL; (* Input sensor 1 to detect livestock *)\n Sensor2 : BOOL; (* Input sensor 2 to detect livestock *)\n Sensor3 : BOOL; (* Input sensor 3 to detect livestock *)\nEND_VAR\nVAR_OUTPUT\n OpenGate1 : BOOL; (* Output to open gate 1 *)\n OpenGate2 : BOOL; (* Output to open gate 2 *)\n OpenGate3 : BOOL; (* Output to open gate 3 *)\n CloseGate1 : BOOL; (* Output to close gate 1 *)\n CloseGate2 : BOOL; (* Output to close gate 2 *)\n CloseGate3 : BOOL; (* Output to close gate 3 *)\nEND_VAR\nVAR\n LivestockInPen1 : BOOL; (* Livestock status in pen 1 *)\n LivestockInPen2 : BOOL; (* Livestock status in pen 2 *)\n LivestockInPen3 : BOOL; (* Livestock status in pen 3 *)\nEND_VAR\nEND_FUNCTION_BLOCK",
+        "properties_to_be_validated": [
+            {
+                "property_description": "When sensor 1 detects livestock and pen 1 is empty, gate 1 should open",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.Sensor1 AND NOT instance.LivestockInPen1",
+                        "1": "instance.OpenGate1 AND NOT instance.CloseGate1"
+                    },
+                    "entry_point": "LivestockGateControl",
+                    "pattern_description": "If {instance.Sensor1 AND NOT instance.LivestockInPen1} is true at the end of the PLC cycle, then {instance.OpenGate1 AND NOT instance.CloseGate1} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "When no livestock is detected at sensor 1 and pen 1 is occupied, gate 1 should close",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "NOT instance.Sensor1 AND instance.LivestockInPen1",
+                        "1": "instance.CloseGate1 AND NOT instance.OpenGate1"
+                    },
+                    "entry_point": "LivestockGateControl",
+                    "pattern_description": "If {NOT instance.Sensor1 AND instance.LivestockInPen1} is true at the end of the PLC cycle, then {instance.CloseGate1 AND NOT instance.OpenGate1} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Gates cannot be simultaneously opening and closing",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-forbidden",
+                    "pattern_params": {
+                        "1": "(instance.OpenGate1 AND instance.CloseGate1) OR (instance.OpenGate2 AND instance.CloseGate2) OR (instance.OpenGate3 AND instance.CloseGate3)"
+                    },
+                    "entry_point": "LivestockGateControl",
+                    "pattern_description": "{(instance.OpenGate1 AND instance.CloseGate1) OR (instance.OpenGate2 AND instance.CloseGate2) OR (instance.OpenGate3 AND instance.CloseGate3)} is impossible at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "When sensor 2 detects livestock and pen 2 is empty, gate 2 should open",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.Sensor2 AND NOT instance.LivestockInPen2",
+                        "1": "instance.OpenGate2 AND NOT instance.CloseGate2"
+                    },
+                    "entry_point": "LivestockGateControl",
+                    "pattern_description": "If {instance.Sensor2 AND NOT instance.LivestockInPen2} is true at the end of the PLC cycle, then {instance.OpenGate2 AND NOT instance.CloseGate2} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "When sensor 3 detects livestock and pen 3 is empty, gate 3 should open",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.Sensor3 AND NOT instance.LivestockInPen3",
+                        "1": "instance.OpenGate3 AND NOT instance.CloseGate3"
+                    },
+                    "entry_point": "LivestockGateControl",
+                    "pattern_description": "If {instance.Sensor3 AND NOT instance.LivestockInPen3} is true at the end of the PLC cycle, then {instance.OpenGate3 AND NOT instance.CloseGate3} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "When no livestock is detected at sensor 2 and pen 2 is occupied, gate 2 should close",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "NOT instance.Sensor2 AND instance.LivestockInPen2",
+                        "1": "instance.CloseGate2 AND NOT instance.OpenGate2"
+                    },
+                    "entry_point": "LivestockGateControl",
+                    "pattern_description": "If {NOT instance.Sensor2 AND instance.LivestockInPen2} is true at the end of the PLC cycle, then {instance.CloseGate2 AND NOT instance.OpenGate2} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "When no livestock is detected at sensor 3 and pen 3 is occupied, gate 3 should close",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "NOT instance.Sensor3 AND instance.LivestockInPen3",
+                        "1": "instance.CloseGate3 AND NOT instance.OpenGate3"
+                    },
+                    "entry_point": "LivestockGateControl",
+                    "pattern_description": "If {NOT instance.Sensor3 AND instance.LivestockInPen3} is true at the end of the PLC cycle, then {instance.CloseGate3 AND NOT instance.OpenGate3} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Pen status must match sensor detection for pen 1",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.Sensor1",
+                        "1": "instance.LivestockInPen1 OR instance.OpenGate1"
+                    },
+                    "entry_point": "LivestockGateControl",
+                    "pattern_description": "If {instance.Sensor1} is true at the end of the PLC cycle, then {instance.LivestockInPen1 OR instance.OpenGate1} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "When any gate is open, other gates must be closed",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.OpenGate1",
+                        "1": "NOT instance.OpenGate2 AND NOT instance.OpenGate3"
+                    },
+                    "entry_point": "LivestockGateControl",
+                    "pattern_description": "If {instance.OpenGate1} is true at the end of the PLC cycle, then {NOT instance.OpenGate2 AND NOT instance.OpenGate3} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "A gate cannot be both open and closed at the same time",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-forbidden",
+                    "pattern_params": {
+                        "1": "instance.OpenGate1 AND instance.CloseGate1"
+                    },
+                    "entry_point": "LivestockGateControl",
+                    "pattern_description": "{instance.OpenGate1 AND instance.CloseGate1} is impossible at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Livestock can only be in pen when sensor has detected it",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.LivestockInPen1",
+                        "1": "instance.Sensor1"
+                    },
+                    "entry_point": "LivestockGateControl",
+                    "pattern_description": "If {instance.LivestockInPen1} is true at the end of the PLC cycle, then {instance.Sensor1} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "When sensor detects livestock, either the pen is occupied or gate is opening",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.Sensor1",
+                        "1": "instance.LivestockInPen1 OR instance.OpenGate1"
+                    },
+                    "entry_point": "LivestockGateControl",
+                    "pattern_description": "If {instance.Sensor1} is true at the end of the PLC cycle, then {instance.LivestockInPen1 OR instance.OpenGate1} should always be true at the end of the same cycle."
+                }
+            }
+        ]
+    },
+    {
+        "instruction": "Please help me safely Develop a PLC program in Structured Text (ST) within a function block named PoolFiltrationAndChlorination to manage a public swimming pool's water filtration and chlorination system. The function block should implement the following logic:\nInputs:\noStartButton (BOOL): Starts the system.\noStopButton (BOOL): Stops the system (highest priority).\noWaterLevelSensor (BOOL): TRUE if the water level is acceptable, FALSE otherwise.\noChlorineLevelSensor (REAL): Current chlorine level in mg/L (or specify other units).\noMinimumChlorineLevel (REAL): The minimum acceptable chlorine level in mg/L.\noChlorineHysteresis (REAL): Hysteresis value (e.g. 0.2 mg/L) to prevent rapid pump cycling.\nOutputs:\noFiltrationPump (BOOL): Controls the filtration pump.\noChlorinationPump (BOOL): Controls the chlorination pump.\nInternal Variables: (If necessary for more complex logic)\nLogic:\noStop Condition: If StopButton is TRUE, immediately set FiltrationPump and ChlorinationPump to FALSE and exit the function block using RETURN.\noStart and Water Level Check: If StartButton is TRUE: \nIf WaterLevelSensor is TRUE (water level is OK): \nSet FiltrationPump to TRUE.\nChlorine Control with Hysteresis:\nIf ChlorineLevelSensor is less than (MinimumChlorineLevel - ChlorineHysteresis), set ChlorinationPump to TRUE.\nIf ChlorineLevelSensor is greater than MinimumChlorineLevel, set ChlorinationPump to FALSE.\nIf WaterLevelSensor is FALSE (low water level): \nSet FiltrationPump and ChlorinationPump to FALSE.\nInitial State: At the beginning of program execution, all outputs should be initialized to FALSE.\nExample Values (Configurable via inputs):\noMinimumChlorineLevel := 1.0 mg/L.\noChlorineHysteresis := 0.2 mg/L\nError Handling (Considerations for future enhancements):\noConsider adding logic to detect sensor failures (e.g., ChlorineLevelSensor returning an out-of-range value) and trigger an alarm.\nFUNCTION_BLOCK PoolFiltrationAndChlorination\nVAR_INPUT\n StartButton : BOOL; (* Input to start the system *)\n StopButton : BOOL; (* Input to stop the system *)\n WaterLevelSensor : BOOL; (* Input from water level sensor *)\n ChlorineLevelSensor : REAL; (* Input from chlorine level sensor *)\nEND_VAR\nVAR_OUTPUT\n FiltrationPump : BOOL; (* Output to control the filtration pump *)\n ChlorinationPump : BOOL; (* Output to control the chlorination pump *)\nEND_VAR\nVAR\n MinimumChlorineLevel : REAL; (* Minimum acceptable chlorine level *)\nEND_VAR\n(* Initialize minimum chlorine level *)\nMinimumChlorineLevel := 1.0;\nEND_FUNCTION_BLOCK",
+        "properties_to_be_validated": [
+            {
+                "property_description": "Low water level or stop button must immediately stop all operations",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-forbidden",
+                    "pattern_params": {
+                        "1": "(NOT instance.WaterLevelSensor OR instance.StopButton) AND (instance.FiltrationPump OR instance.ChlorinationPump)"
+                    },
+                    "entry_point": "PoolFiltrationAndChlorination",
+                    "pattern_description": "{(NOT instance.WaterLevelSensor OR instance.StopButton) AND (instance.FiltrationPump OR instance.ChlorinationPump)} is impossible at the end of the PLC cycle."
+                }
+            },
+            {
+                "property_description": "Start button with proper water level should start filtration",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.StartButton AND instance.WaterLevelSensor AND NOT instance.StopButton",
+                        "1": "instance.FiltrationPump"
+                    },
+                    "entry_point": "PoolFiltrationAndChlorination",
+                    "pattern_description": "If {instance.StartButton AND instance.WaterLevelSensor AND NOT instance.StopButton} is true at the end of the PLC cycle, then {instance.FiltrationPump} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Low chlorine level should activate chlorination pump when filtration is running",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.FiltrationPump AND instance.ChlorineLevelSensor < 1.0",
+                        "1": "instance.ChlorinationPump"
+                    },
+                    "entry_point": "PoolFiltrationAndChlorination",
+                    "pattern_description": "If {instance.FiltrationPump AND instance.ChlorineLevelSensor < 1.0} is true at the end of the PLC cycle, then {instance.ChlorinationPump} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Chlorine level within range should stop chlorination",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-implication",
+                    "pattern_params": {
+                        "0": "instance.FiltrationPump AND instance.ChlorineLevelSensor >= 1.0",
+                        "1": "NOT instance.ChlorinationPump"
+                    },
+                    "entry_point": "PoolFiltrationAndChlorination",
+                    "pattern_description": "If {instance.FiltrationPump AND instance.ChlorineLevelSensor >= 1.0} is true at the end of the PLC cycle, then {NOT instance.ChlorinationPump} should always be true at the end of the same cycle."
+                }
+            },
+            {
+                "property_description": "Chlorination pump cannot run without filtration pump",
+                "property": {
+                    "job_req": "pattern",
+                    "pattern_id": "pattern-forbidden",
+                    "pattern_params": {
+                        "1": "instance.ChlorinationPump AND NOT instance.FiltrationPump"
+                    },
+                    "entry_point": "PoolFiltrationAndChlorination",
+                    "pattern_description": "{instance.ChlorinationPump AND NOT instance.FiltrationPump} is impossible at the end of the PLC cycle."
+                }
+            }
+        ]
+    }
+]

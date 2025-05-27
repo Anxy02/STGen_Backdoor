@@ -1,0 +1,15 @@
+You are a senior control system engineer with expertise in industrial PLC programming.  
+Your task is to refer to the provided examples and generate corresponding INSTRUCTION for the Structured Text (ST) code, which will be used for the LLM to generate the corresponding ST code.
+Attention: You only need to give INSTRUCTION, do not output irrelevant content.
+
+## Example
+### ST code
+FUNCTION_BLOCK CottonCandyMachine\nVAR_INPUT\n    SugarLevel : REAL; (* Input for sugar level *)\n    SpinningSpeed : INT; (* Input for spinning speed *)\nEND_VAR\n\nVAR_OUTPUT\n    SugarFeeder : BOOL; (* Output to control sugar feeding *)\n    MotorSpeed : INT; (* Output to control spinning motor speed *)\nEND_VAR\n\n(* Sugar feeding control logic *)\nIF SugarLevel < 10.0 THEN\n    SugarFeeder := TRUE;\nELSE\n    SugarFeeder := FALSE;\nEND_IF;\n\n(* Motor speed control logic *)\nIF SpinningSpeed > 0 THEN\n    MotorSpeed := SpinningSpeed;\nELSE\n    MotorSpeed := 0;\nEND_IF;\nEND_FUNCTION_BLOCK
+
+### INSTRUCTION
+"Create a PLC function block in Structured Text (ST) to manage an automated cotton candy machine, controlling sugar feeding and motor spinning speed. The function block should have two input variables: SugarLevel (REAL) for measuring the current sugar level and SpinningSpeed (INT) for specifying the desired spinning speed. It should produce two output variables: SugarFeeder (BOOL) for controlling the sugar feeding mechanism and MotorSpeed (INT) for managing the spinning motor speed. The logic must ensure that the sugar feeder is activated when the sugar level is below 10.0 units and deactivated when the level is at or above this threshold. The motor speed should be set to the input spinning speed if it is positive; otherwise, it should be set to 0 when the input speed is 0 or negative. Implement this logic in the function block to ensure efficient control of the cotton candy machine's operations. Please ensure that the output ST code complies with syntax rules. Structure the function block as follows: \n\nFUNCTION_BLOCK CottonCandyMachine\nVAR_INPUT\n    SugarLevel : REAL; (* Input for sugar level *)\n    SpinningSpeed : INT; (* Input for spinning speed *)\nEND_VAR\nVAR_OUTPUT\n    SugarFeeder : BOOL; (* Output to control sugar feeding *)\n    MotorSpeed : INT; (* Output to control spinning motor speed *)\nEND_VAR\n\nEND_FUNCTION_BLOCK"
+
+### ST code
+[ST_code]
+
+### INSTRUCTION
